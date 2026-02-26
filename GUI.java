@@ -4,6 +4,15 @@ import java.awt.*;
 public class GUI extends JFrame {
     private JButton btnTrangChu, btnSanPham, btnKhachHang, btnNhanVien, btnDonHang, btnKho, btnKhuyenMai;
     private JPanel Main;
+    private CardLayout cardLayout;
+
+    private static final String TRANG_CHU  = "TRANG_CHU";
+    private static final String SAN_PHAM   = "SAN_PHAM";
+    private static final String KHACH_HANG = "KHACH_HANG";
+    private static final String NHAN_VIEN  = "NHAN_VIEN";
+    private static final String DON_HANG   = "DON_HANG";
+    private static final String KHO        = "KHO";
+    private static final String KHUYEN_MAI = "KHUYEN_MAI";
 
 
     public GUI() {
@@ -79,19 +88,106 @@ public class GUI extends JFrame {
         add(Left, BorderLayout.WEST);
 
         //bảng nd chính
-        Main = new JPanel();
-        Main.setBackground(new Color(0xF8F7FF));
-        add(Main, BorderLayout.CENTER);
+        cardLayout   = new CardLayout();
+        Main = new JPanel(cardLayout);
 
+        Main.add(createPanelTrangChu(),  TRANG_CHU);
+        Main.add(createPanelSanPham(),   SAN_PHAM);
+        Main.add(createPanelKhachHang(), KHACH_HANG);
+        Main.add(createPanelNhanVien(),  NHAN_VIEN);
+        Main.add(createPanelDonHang(),   DON_HANG);
+        Main.add(createPanelKho(),       KHO);
+        Main.add(createPanelKhuyenMai(), KHUYEN_MAI);
+
+        add(Main, BorderLayout.CENTER);
+    
         // Sau khi tạo các button
-        btnTrangChu.addActionListener(e -> showTrangChu());
-        btnSanPham.addActionListener(e -> showSanPham());
-        btnKhachHang.addActionListener(e -> showKhachHang());
-        btnNhanVien.addActionListener(e -> showNhanVien());
-        btnDonHang.addActionListener(e -> showDonHang());
-        btnKho.addActionListener(e -> showKho());
-        btnKhuyenMai.addActionListener(e -> showKhuyenMai());
+        btnTrangChu.addActionListener(e -> cardLayout.show(Main, TRANG_CHU));
+        btnSanPham.addActionListener(e -> cardLayout.show(Main, SAN_PHAM));
+        btnKhachHang.addActionListener(e -> cardLayout.show(Main, KHACH_HANG));
+        btnNhanVien.addActionListener(e -> cardLayout.show(Main, NHAN_VIEN));
+        btnDonHang.addActionListener(e -> cardLayout.show(Main, DON_HANG));
+        btnKho.addActionListener(e -> cardLayout.show(Main, KHO));
+        btnKhuyenMai.addActionListener(e -> cardLayout.show(Main, KHUYEN_MAI));
     }
+
+     private JPanel createPanelTrangChu() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(0xF8F7FF));
+
+        JLabel title = new JLabel("Trang Chủ", SwingConstants.CENTER);
+        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+
+        panel.add(title, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createPanelSanPham() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(0xF8F7FF));
+
+        JLabel title = new JLabel("Quản Lý Sản Phẩm", SwingConstants.CENTER);
+        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+
+        panel.add(title, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createPanelKhachHang() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(0xF8F7FF));
+
+        JLabel title = new JLabel("Quản Lý Khách Hàng", SwingConstants.CENTER);
+        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+
+        panel.add(title, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createPanelNhanVien() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(0xF8F7FF));
+
+        JLabel title = new JLabel("Quản Lý Nhân Viên", SwingConstants.CENTER);
+        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+
+        panel.add(title, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createPanelDonHang() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(0xF8F7FF));
+
+        JLabel title = new JLabel("Quản Lý Đơn Hàng", SwingConstants.CENTER);
+        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+
+        panel.add(title, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createPanelKho() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(0xF8F7FF));
+
+        JLabel title = new JLabel("Quản Lý Kho", SwingConstants.CENTER);
+        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+
+        panel.add(title, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createPanelKhuyenMai() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(0xF8F7FF));
+
+        JLabel title = new JLabel("Quản Lý Khuyến Mãi", SwingConstants.CENTER);
+        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+
+        panel.add(title, BorderLayout.CENTER);
+        return panel;
+    }
+
 
     // Hàm tạo style cho mấy cái nút 
     private JButton createStyledButton(String text) {
@@ -102,7 +198,7 @@ public class GUI extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
                 //bóng button
-                float shadowOffset = 3.75f;
+                int shadowOffset = 3;
                 for (int i = shadowOffset; i > 0; i--) {
                     int alpha = (int)(50.0 * (shadowOffset - i) / shadowOffset); 
                     g2.setColor(new Color(0, 0, 0, alpha));
@@ -143,90 +239,6 @@ public class GUI extends JFrame {
         });
 
         return btn;
-    }
-
-    private void showTrangChu() {
-        Main.removeAll();
-        Main.setLayout(new BorderLayout());
-
-        JPanel pnl = new JPanel();
-        pnl.setBackground(Color.BLACK);
-        Main.add(pnl);
-
-        Main.revalidate();
-        Main.repaint();
-    }
-
-    private void showSanPham() {
-        Main.removeAll();
-        Main.setLayout(new BorderLayout());
-
-        JPanel pnl = new JPanel();
-        pnl.setBackground(Color.BLUE);
-        Main.add(pnl);
-
-        Main.revalidate();
-        Main.repaint();
-    }
-
-    private void showKhachHang() {
-        Main.removeAll();
-        Main.setLayout(new BorderLayout());
-
-        JPanel pnl = new JPanel();
-        pnl.setBackground(Color.CYAN);
-        Main.add(pnl);
-
-        Main.revalidate();
-        Main.repaint();
-    }
-
-    private void showNhanVien() {
-        Main.removeAll();
-        Main.setLayout(new BorderLayout());
-
-        JPanel pnl = new JPanel();
-        pnl.setBackground(Color.GRAY);
-        Main.add(pnl);
-
-        Main.revalidate();
-        Main.repaint();
-    }
-
-    private void showDonHang() {
-        Main.removeAll();
-        Main.setLayout(new BorderLayout());
-
-        JPanel pnl = new JPanel();
-        pnl.setBackground(Color.GREEN);
-        Main.add(pnl);
-
-        Main.revalidate();
-        Main.repaint();
-    }
-
-    private void showKho() {
-        Main.removeAll();
-        Main.setLayout(new BorderLayout());
-
-        JPanel pnl = new JPanel();
-        pnl.setBackground(Color.MAGENTA);
-        Main.add(pnl);
-
-        Main.revalidate();
-        Main.repaint();
-    }
-
-    private void showKhuyenMai() {
-        Main.removeAll();
-        Main.setLayout(new BorderLayout());
-
-        JPanel pnl = new JPanel();
-        pnl.setBackground(Color.ORANGE);
-        Main.add(pnl);
-
-        Main.revalidate();
-        Main.repaint();
     }
 
     public static void main(String[] args) {
