@@ -5,6 +5,7 @@ public class GUI extends JFrame {
     private JButton btnTrangChu, btnSanPham, btnKhachHang, btnNhanVien, btnDonHang, btnKho, btnKhuyenMai;
     private JPanel Main;
 
+
     public GUI() {
         setTitle("Siu Thị 36");
         setSize(1440, 1024);
@@ -101,12 +102,14 @@ public class GUI extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
                 //bóng button
-                int shadowOffset = 15/4;
+                float shadowOffset = 3.75f;
                 for (int i = shadowOffset; i > 0; i--) {
                     int alpha = (int)(50.0 * (shadowOffset - i) / shadowOffset); 
                     g2.setColor(new Color(0, 0, 0, alpha));
                     g2.fillRoundRect(0, i, getWidth(), getHeight()-i, 40, 40);
                 }
+
+
             
                 //nền button
                 g2.setColor(getBackground());
