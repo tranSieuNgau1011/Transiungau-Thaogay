@@ -1,4 +1,7 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
+
 import java.awt.*;
 
 public class GUI extends JFrame {
@@ -124,13 +127,135 @@ public class GUI extends JFrame {
 
     private JPanel createPanelSanPham() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(0xF8F7FF));
+       
 
-        JLabel title = new JLabel("Quản Lý Sản Phẩm", SwingConstants.CENTER);
-        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+        JPanel top= new JPanel();
+        top.setPreferredSize(new Dimension(1174,94));
+        top.setBackground(new Color(0xF8F7FF));
+        top.setLayout(new FlowLayout(FlowLayout.RIGHT, 20, 10));
+        top.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.BLACK,1),
+            BorderFactory.createEmptyBorder(20,10,20,10)
+        ));
 
-        panel.add(title, BorderLayout.CENTER);
+         String[] boLoc = {
+                "Tất cả",
+                "Còn hàng",
+                "Hết hàng",
+                "Có khuyến mãi",
+                "Cận date"
+        };
+
+        JComboBox cbLoc = new JComboBox<>(boLoc);
+        cbLoc.setPreferredSize(new Dimension(254,42));
+        cbLoc.setFont(new Font("Arial", Font.PLAIN, 24));
+        cbLoc.setBackground(new Color(0xD9D9D9));
+       
+        top.add(cbLoc);
+
+
+        JPanel timkiem= new JPanel();
+        timkiem.setLayout(new BorderLayout());
+        timkiem.setPreferredSize(new Dimension(229,42));
+        timkiem.setBackground(new Color(0xD9D9D9));
+
+        JTextField tim= new JTextField();
+        tim.setToolTipText("Nhập tên sản phẩm...");
+        tim.setFont(new Font("Arial", Font.PLAIN,24));
+        timkiem.add(tim,BorderLayout.CENTER);
+
+        JButton nuttim= new JButton("🔍");
+        nuttim.setBorderPainted(false);
+        nuttim.setContentAreaFilled(false);
+        nuttim.setFocusPainted(false);
+
+        timkiem.add(nuttim,BorderLayout.EAST);
+        top.add(timkiem);
+
+        JButton them= new JButton("+ Thêm sản phẩm");
+        them.setFocusPainted(false);
+        them.setBackground(new Color(0xD9D9D9));
+        them.setPreferredSize(new Dimension(254,42));
+        them.setFont(new Font("Arial",Font.BOLD,24));
+
+        top.add(them);
+
+        JPanel content= new JPanel();
+        content.setBackground(new Color(0xF8F7FF));
+        content.setLayout(new BorderLayout());
+
+        String[] tencot = {"Mã SP","Ảnh", "Tên sản phẩm", "Giá", "Số lượng", "Kho", "Date", "Khuyến mãi","Thao tác"};
+        Object[][] dulieu = {
+            {"MD01","", "Nước F trái K",  "25.000đ",  7,  "Còn hàng",  "26/10/2026",  "-2.000đ",""},
+            {"MD02","", "Thịt mèo cháy", "200.000đ",  1,  "Hết hàng",  "01/03/2026", "-100.000đ",""},
+            {"MD03","", "Sản phẩm C",     "50.000đ",  5,  "Còn hàng",  "15/05/2026",  "-5.000đ",""},
+        };
+
+        JTable bang= new JTable(dulieu,tencot);
+        bang.setRowHeight(76);
+        bang.setFont(new Font("Arial", Font.PLAIN, 20));
+        bang.getTableHeader().setFont(new Font("Arial", Font.BOLD, 20));
+        bang.getColumnModel().getColumn(0).setPreferredWidth(50);
+        bang.getColumnModel().getColumn(4).setPreferredWidth(50);
+        bang.getColumnModel().getColumn(2).setPreferredWidth(150);
+        bang.getTableHeader().setPreferredSize(new Dimension(1166,76 ));
+        bang.getTableHeader().setBackground(new Color(0xAF9FCB));
+       bang.getColumnModel().getColumn(8)
+    .setCellRenderer(new TableCellRenderer() {
+
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        JButton sua = new JButton("Sửa");
+        JButton xoa = new JButton("Xóa");
+
+        {
+            panel.add(sua);
+            panel.add(xoa);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value,
+                boolean isSelected, boolean hasFocus,
+                int row, int column) {
+
+            return panel;
+        }
+    });
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+                public Component getTableCellRendererComponent(
+                        JTable table, Object value, boolean isSelected,
+                        boolean hasFocus, int row, int column) {
+
+                    Component c = super.getTableCellRendererComponent(
+                            table, value, isSelected, hasFocus, row, column);
+
+                    if (!isSelected) {
+                        if (row % 2 == 0)
+                            c.setBackground(Color.WHITE);
+                        else
+                            c.setBackground(new Color(0xD3E8F3));
+                    }
+
+                    setHorizontalAlignment(SwingConstants.CENTER);
+                    return c;
+                }
+            };
+
+            for (int i = 0; i < bang.getColumnCount(); i++) {
+                bang.getColumnModel().getColumn(i).setCellRenderer(renderer);
+            }
+
+
+
+        JScrollPane cuon = new JScrollPane(bang);
+        content.add(cuon, BorderLayout.CENTER);
+
+
+
+        panel.add(top,BorderLayout.NORTH);
+        panel.add(content, BorderLayout.CENTER);
         return panel;
+       
     }
 
     private JPanel createPanelKhachHang() {
