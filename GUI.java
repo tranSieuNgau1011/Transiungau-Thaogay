@@ -1196,13 +1196,339 @@ public class GUI extends JFrame {
     }
 
     private JPanel createPanelNhanVien() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(0xF8F7FF));
+        CardLayout innerCard = new CardLayout();
+        JPanel panel = new JPanel(innerCard);
 
-        JLabel title = new JLabel("Quản Lý Nhân Viên", SwingConstants.CENTER);
-        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+        String[] columns = {
+            "Mã chấm công", "Họ tên", "Giới tính", "Ngày sinh",
+            "Chức vụ", "Địa chỉ", "Email", "SĐT", "Thao tác"
+        };
+        DefaultTableModel model = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return c == 8; }
+        };
+        model.addRow(new Object[]{ "A123",   "Nhan Thị Ngọc Trân", "Nữ", "10/11/2006", "Nhân viên",   "A33/19D Bình Hưng Bình Chánh", "ngoctran@gmail.com",    "0904254315", "" });
+        model.addRow(new Object[]{ "C66859", "Nguyễn Thái Thảo",   "Nữ", "12/07/2006", "Nhân viên", "Saohoa/1233",                   "meolanhmanh@gmail.com", "0123456789", "" });
 
-        panel.add(title, BorderLayout.CENTER);
+        // ── Fields riêng cho Nhân viên ─────────────────────────────
+        JTextField nvMa       = makeField();
+        JTextField nvTen      = makeField();
+        JRadioButton nvRbNam  = new JRadioButton("Nam");
+        JRadioButton nvRbNu   = new JRadioButton("Nữ");
+        ButtonGroup  nvBgGT   = new ButtonGroup();
+        nvBgGT.add(nvRbNam); nvBgGT.add(nvRbNu);
+        nvRbNam.setSelected(true);
+        JTextField nvNgaySinh = makeField();
+        JTextField nvChucVu   = makeField();
+        JTextField nvDiaChi   = makeField();
+        JTextField nvEmail    = makeField();
+        JTextField nvSDT      = makeField();
+
+        int[] nvEditingRow = { -1 };
+
+        // ── CARD 1: Bảng danh sách ──────────────────────────────────
+        JPanel tableCard = new JPanel(new BorderLayout());
+
+        JTable bang = new JTable(model);
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        bang.setRowSorter(sorter);
+
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
+        top.setPreferredSize(new Dimension(1174, 94));
+        top.setBackground(new Color(0xF8F7FF));
+        top.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.BLACK, 1),
+            BorderFactory.createEmptyBorder(20, 10, 20, 10)));
+
+        String[] boloc = { "Tất cả", "Nam", "Nữ" };
+        JComboBox<String> cbLoc = new JComboBox<>(boloc);
+        cbLoc.setPreferredSize(new Dimension(220, 42));
+        cbLoc.setFont(new Font("Arial", Font.PLAIN, 22));
+        cbLoc.setBackground(new Color(0xD9D9D9));
+
+        JPanel timkiem = new JPanel(new BorderLayout());
+        timkiem.setPreferredSize(new Dimension(229, 42));
+        timkiem.setBackground(new Color(0xD9D9D9));
+        JTextField tim = new JTextField();
+        tim.setFont(new Font("Arial", Font.PLAIN, 22));
+        timkiem.add(tim, BorderLayout.CENTER);
+
+        JButton nuttim = new JButton("🔍");
+        nuttim.setBorderPainted(false); nuttim.setContentAreaFilled(false);
+        nuttim.setFocusPainted(false);  nuttim.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        nuttim.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                nuttim.setContentAreaFilled(true); nuttim.setBackground(new Color(0xC5B3E6)); nuttim.setOpaque(true);
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                nuttim.setContentAreaFilled(false); nuttim.setOpaque(false);
+            }
+        });
+        timkiem.add(nuttim, BorderLayout.EAST);
+
+        JButton btnThem = new JButton("+ Thêm nhân viên");
+        btnThem.setFocusPainted(false); btnThem.setBackground(new Color(0xD9D9D9));
+        btnThem.setPreferredSize(new Dimension(230, 42));
+        btnThem.setFont(new Font("Arial", Font.BOLD, 20));
+        btnThem.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnThem.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { btnThem.setBackground(new Color(0xC5B3E6)); }
+            public void mouseExited(java.awt.event.MouseEvent e)  { btnThem.setBackground(new Color(0xD9D9D9)); }
+        });
+
+        Runnable applyFilter = () -> {
+            String kw = tim.getText().trim();
+            int idx = cbLoc.getSelectedIndex();
+            RowFilter<DefaultTableModel, Integer> fLoc = switch (idx) {
+                case 1 -> RowFilter.regexFilter("(?i)^Nam$",       2);
+                case 2 -> RowFilter.regexFilter("(?i)^Nữ$",        2);
+                default -> null;
+            };
+            RowFilter<DefaultTableModel, Integer> fTim = kw.isEmpty()
+                ? null : RowFilter.regexFilter("(?i)" + kw, 1);
+            if (fLoc != null && fTim != null)
+                sorter.setRowFilter(RowFilter.andFilter(java.util.List.of(fLoc, fTim)));
+            else if (fLoc != null) sorter.setRowFilter(fLoc);
+            else if (fTim != null) sorter.setRowFilter(fTim);
+            else sorter.setRowFilter(null);
+        };
+        cbLoc.addActionListener(e -> applyFilter.run());
+        nuttim.addActionListener(e -> applyFilter.run());
+        tim.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { applyFilter.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { applyFilter.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter.run(); }
+        });
+
+        top.add(cbLoc); top.add(timkiem); top.add(btnThem); 
+
+        bang.setRowHeight(76);
+        bang.setFont(new Font("Arial", Font.PLAIN, 20));
+        bang.getTableHeader().setFont(new Font("Arial", Font.BOLD, 20));
+        bang.getTableHeader().setPreferredSize(new Dimension(1166, 76));
+        bang.getTableHeader().setBackground(new Color(0xAF9FCB));
+        bang.getColumnModel().getColumn(0).setPreferredWidth(100);
+        bang.getColumnModel().getColumn(1).setPreferredWidth(200);
+        bang.getColumnModel().getColumn(2).setPreferredWidth(80);
+        bang.getColumnModel().getColumn(3).setPreferredWidth(100);
+        bang.getColumnModel().getColumn(4).setPreferredWidth(100);
+        bang.getColumnModel().getColumn(5).setPreferredWidth(180);
+        bang.getColumnModel().getColumn(6).setPreferredWidth(180);
+        bang.getColumnModel().getColumn(7).setPreferredWidth(110);
+
+        DefaultTableCellRenderer altRenderer = new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(
+                    JTable t, Object v, boolean sel, boolean foc, int row, int col) {
+                Component c = super.getTableCellRendererComponent(t, v, sel, foc, row, col);
+                if (!sel) c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xD3E8F3));
+                setHorizontalAlignment(SwingConstants.CENTER);
+                return c;
+            }
+        };
+        for (int i = 0; i < bang.getColumnCount(); i++)
+            bang.getColumnModel().getColumn(i).setCellRenderer(altRenderer);
+
+        // Khai báo sớm để dùng được trong editor bên dưới
+        JButton btnLuuNV = new JButton("LƯU");
+        btnLuuNV.setFont(new Font("Arial", Font.BOLD, 24));
+        btnLuuNV.setBackground(new Color(0xB83434)); btnLuuNV.setForeground(Color.WHITE);
+        btnLuuNV.setFocusPainted(false); btnLuuNV.setBorderPainted(false);
+        btnLuuNV.setPreferredSize(new Dimension(160, 52));
+        btnLuuNV.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        bang.getColumnModel().getColumn(8).setCellRenderer(new TableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(
+                    JTable t, Object v, boolean sel, boolean foc, int row, int col) {
+                JPanel p = new JPanel(new GridLayout(2, 1, 5, 5));
+                JButton xem = new JButton("Xem"), xoa = new JButton("Xóa");
+                xem.setFocusPainted(false); xoa.setFocusPainted(false);
+                xem.setBackground(new Color(0x6677C8)); xoa.setBackground(new Color(0xB83434));
+                xem.setForeground(Color.WHITE);         xoa.setForeground(Color.WHITE);
+                p.add(xem); p.add(xoa);
+                return p;
+            }
+        });
+
+        bang.getColumnModel().getColumn(8).setCellEditor(new DefaultCellEditor(new JCheckBox()) {
+            private final JPanel p    = new JPanel(new GridLayout(2, 1, 5, 5));
+            private final JButton xem = new JButton("Xem"), xoa = new JButton("Xóa");
+            private int curRow = -1;
+            {
+                xem.setFocusPainted(false); xoa.setFocusPainted(false);
+                xem.setBackground(new Color(0x6677C8)); xoa.setBackground(new Color(0xB83434));
+                xem.setForeground(Color.WHITE);         xoa.setForeground(Color.WHITE);
+                p.add(xem); p.add(xoa);
+                xem.addActionListener(e -> {
+                    fireEditingStopped();
+                    int mr = bang.convertRowIndexToModel(curRow);
+                    nvEditingRow[0] = -1;
+                    nvMa.setText(model.getValueAt(mr, 0).toString());
+                    nvTen.setText(model.getValueAt(mr, 1).toString());
+                    String gt = model.getValueAt(mr, 2).toString();
+                    if (gt.equalsIgnoreCase("Nữ")) nvRbNu.setSelected(true);
+                    else nvRbNam.setSelected(true);
+                    nvNgaySinh.setText(model.getValueAt(mr, 3).toString());
+                    nvChucVu.setText(model.getValueAt(mr, 4).toString());
+                    nvDiaChi.setText(model.getValueAt(mr, 5).toString());
+                    nvEmail.setText(model.getValueAt(mr, 6).toString());
+                    nvSDT.setText(model.getValueAt(mr, 7).toString());
+                    // Disable toàn bộ fields — chỉ xem
+                    nvMa.setEditable(false); nvTen.setEditable(false);
+                    nvNgaySinh.setEditable(false); nvChucVu.setEditable(false);
+                    nvDiaChi.setEditable(false); nvEmail.setEditable(false);
+                    nvSDT.setEditable(false); nvRbNam.setEnabled(false); nvRbNu.setEnabled(false);
+                    btnLuuNV.setVisible(false);
+                    innerCard.show(panel, CARD_THEM);
+                });
+                xoa.addActionListener(e -> {
+                    fireEditingStopped();
+                    int mr = bang.convertRowIndexToModel(curRow);
+                    if (mr >= 0 && mr < model.getRowCount()) model.removeRow(mr);
+                });
+            }
+            @Override public Component getTableCellEditorComponent(
+                    JTable t, Object v, boolean sel, int row, int col) { curRow = row; return p; }
+            @Override public Object getCellEditorValue() { return ""; }
+        });
+
+        JPanel content = new JPanel(new BorderLayout());
+        content.setBackground(new Color(0xF8F7FF));
+        content.add(new JScrollPane(bang), BorderLayout.CENTER);
+        tableCard.add(top,     BorderLayout.NORTH);
+        tableCard.add(content, BorderLayout.CENTER);
+
+        // ── CARD 2: Form thêm / sửa nhân viên ──────────────────────
+        JPanel themCard = new JPanel(new BorderLayout());
+        themCard.setBackground(new Color(0xF0EFF8));
+
+        JPanel formHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 18));
+        formHeader.setBackground(new Color(0xF0EFF8));
+        formHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(0xCCCCCC)));
+        JButton btnQuayLai = new JButton("← Quay lại danh sách");
+        btnQuayLai.setFont(new Font("Arial", Font.BOLD, 22));
+        btnQuayLai.setBackground(new Color(0x9B8EA8)); btnQuayLai.setForeground(Color.WHITE);
+        btnQuayLai.setFocusPainted(false); btnQuayLai.setBorderPainted(false);
+        btnQuayLai.setPreferredSize(new Dimension(300, 48));
+        btnQuayLai.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnQuayLai.addActionListener(e -> {
+            nvEditingRow[0] = -1;
+            nvMa.setEditable(true); nvTen.setEditable(true);
+            nvNgaySinh.setEditable(true); nvChucVu.setEditable(true);
+            nvDiaChi.setEditable(true); nvEmail.setEditable(true);
+            nvSDT.setEditable(true); nvRbNam.setEnabled(true); nvRbNu.setEnabled(true);
+            btnLuuNV.setVisible(true);
+            innerCard.show(panel, CARD_TABLE);
+        });
+        formHeader.add(btnQuayLai);
+        themCard.add(formHeader, BorderLayout.NORTH);
+
+        JPanel form = new JPanel(null);
+        form.setBackground(new Color(0xF0EFF8));
+        Font lf = new Font("Arial", Font.BOLD, 20);
+
+        JLabel lbMaNV = new JLabel("Mã chấm công"); lbMaNV.setFont(lf); lbMaNV.setBounds(40, 40, 200, 30);
+        nvMa.setBounds(240, 35, 320, 42);
+
+        JLabel lbTenNV = new JLabel("Họ tên"); lbTenNV.setFont(lf); lbTenNV.setBounds(40, 110, 200, 30);
+        nvTen.setBounds(240, 105, 320, 42);
+
+        JLabel lbGTNV = new JLabel("Giới tính"); lbGTNV.setFont(lf); lbGTNV.setBounds(40, 180, 200, 30);
+        Font rfNV = new Font("Arial", Font.PLAIN, 20);
+        nvRbNam.setFont(rfNV); nvRbNu.setFont(rfNV);
+        nvRbNam.setBackground(new Color(0xF0EFF8)); nvRbNu.setBackground(new Color(0xF0EFF8));
+        nvRbNam.setBounds(240, 175, 90, 42); nvRbNu.setBounds(340, 175, 80, 42);
+
+        JLabel lbNSNV = new JLabel("Ngày sinh"); lbNSNV.setFont(lf); lbNSNV.setBounds(40, 250, 200, 30);
+        nvNgaySinh.setBounds(240, 245, 320, 42);
+        JLabel lbNSHintNV = new JLabel("dd/MM/yyyy");
+        lbNSHintNV.setFont(new Font("Arial", Font.ITALIC, 16)); lbNSHintNV.setForeground(new Color(0x888888));
+        lbNSHintNV.setBounds(570, 253, 120, 30);
+
+        JLabel lbCVNV = new JLabel("Chức vụ"); lbCVNV.setFont(lf); lbCVNV.setBounds(40, 320, 200, 30);
+        nvChucVu.setBounds(240, 315, 320, 42);
+        JLabel lbCVHint = new JLabel(" Nhân viên");
+        lbCVHint.setFont(new Font("Arial", Font.ITALIC, 16)); lbCVHint.setForeground(new Color(0x888888));
+        lbCVHint.setBounds(570, 323, 200, 30);
+
+        JLabel lbDCNV = new JLabel("Địa chỉ"); lbDCNV.setFont(lf); lbDCNV.setBounds(720, 40, 180, 30);
+        nvDiaChi.setBounds(890, 35, 320, 42);
+
+        JLabel lbEmailNV = new JLabel("Email"); lbEmailNV.setFont(lf); lbEmailNV.setBounds(720, 110, 180, 30);
+        nvEmail.setBounds(890, 105, 320, 42);
+
+        JLabel lbSDTNV = new JLabel("SĐT"); lbSDTNV.setFont(lf); lbSDTNV.setBounds(720, 180, 180, 30);
+        nvSDT.setBounds(890, 175, 320, 42);
+
+        form.add(lbMaNV);  form.add(nvMa);
+        form.add(lbTenNV); form.add(nvTen);
+        form.add(lbGTNV);  form.add(nvRbNam); form.add(nvRbNu);
+        form.add(lbNSNV);  form.add(nvNgaySinh); form.add(lbNSHintNV);
+        form.add(lbCVNV);  form.add(nvChucVu);   form.add(lbCVHint);
+        form.add(lbDCNV);  form.add(nvDiaChi);
+        form.add(lbEmailNV); form.add(nvEmail);
+        form.add(lbSDTNV); form.add(nvSDT);
+        themCard.add(form, BorderLayout.CENTER);
+
+        JPanel formFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 30, 16));
+        formFooter.setBackground(new Color(0xF0EFF8));
+        formFooter.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(0xCCCCCC)));
+        formFooter.add(btnLuuNV);
+        themCard.add(formFooter, BorderLayout.SOUTH);
+
+        btnLuuNV.addActionListener(e -> {
+            String ma    = nvMa.getText().trim();
+            String ten   = nvTen.getText().trim();
+            String gt    = nvRbNam.isSelected() ? "Nam" : "Nữ";
+            String ns    = nvNgaySinh.getText().trim();
+            String cv    = nvChucVu.getText().trim();
+            String dc    = nvDiaChi.getText().trim();
+            String email = nvEmail.getText().trim();
+            String sdt   = nvSDT.getText().trim();
+            if (ma.isEmpty() || ten.isEmpty() || ns.isEmpty() || sdt.isEmpty()) {
+                JOptionPane.showMessageDialog(themCard,
+                    "Vui lòng nhập đủ các trường bắt buộc:\nMã, Họ tên, Ngày sinh, SĐT.",
+                    "Thiếu thông tin", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (nvEditingRow[0] >= 0) {
+                model.setValueAt(ma,    nvEditingRow[0], 0);
+                model.setValueAt(ten,   nvEditingRow[0], 1);
+                model.setValueAt(gt,    nvEditingRow[0], 2);
+                model.setValueAt(ns,    nvEditingRow[0], 3);
+                model.setValueAt(cv,    nvEditingRow[0], 4);
+                model.setValueAt(dc,    nvEditingRow[0], 5);
+                model.setValueAt(email, nvEditingRow[0], 6);
+                model.setValueAt(sdt,   nvEditingRow[0], 7);
+                nvEditingRow[0] = -1;
+            } else {
+                model.addRow(new Object[]{ ma, ten, gt, ns, cv, dc, email, sdt, "" });
+            }
+            nvMa.setText(""); nvTen.setText(""); nvRbNam.setSelected(true);
+            nvNgaySinh.setText(""); nvChucVu.setText(""); nvDiaChi.setText("");
+            nvEmail.setText(""); nvSDT.setText("");
+            innerCard.show(panel, CARD_TABLE);
+        });
+
+        
+        // ── Gán action các nút top bar ──────────────────────────────
+        btnThem.addActionListener(e -> {
+            nvEditingRow[0] = -1;
+            nvMa.setText(""); nvTen.setText(""); nvRbNam.setSelected(true);
+            nvNgaySinh.setText(""); nvChucVu.setText(""); nvDiaChi.setText("");
+            nvEmail.setText(""); nvSDT.setText("");
+            nvMa.setEditable(true); nvTen.setEditable(true);
+            nvNgaySinh.setEditable(true); nvChucVu.setEditable(true);
+            nvDiaChi.setEditable(true); nvEmail.setEditable(true);
+            nvSDT.setEditable(true); nvRbNam.setEnabled(true); nvRbNu.setEnabled(true);
+            btnLuuNV.setVisible(true);
+            innerCard.show(panel, CARD_THEM);
+        });
+
+       
+
+        panel.add(tableCard, CARD_TABLE);
+        panel.add(themCard,  CARD_THEM);
+        innerCard.show(panel, CARD_TABLE);
+
         return panel;
     }
 
