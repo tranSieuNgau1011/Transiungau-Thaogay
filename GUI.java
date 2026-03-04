@@ -19,6 +19,19 @@ public class GUI extends JFrame {
     private JTextField tfDate;
     private JTextField tfKM;
 
+    private JTextField khTenKH;
+    private JRadioButton rbNam, rbNu;
+    private ButtonGroup bgGioiTinh;
+    private JTextField khNgaySinh;
+    private JTextField khHang;
+    private JTextField khDiem;
+    private JTextField khDiaChi;
+    private JTextField khEmail;
+    private JTextField khSDT;
+
+    private int khEditingRow  = -1;
+    private int khViewingRow  = -1;
+
     private static final String TRANG_CHU  = "TRANG_CHU";
     private static final String SAN_PHAM   = "SAN_PHAM";
     private static final String KHACH_HANG = "KHACH_HANG";
@@ -755,13 +768,435 @@ public class GUI extends JFrame {
     }
 
     private JPanel createPanelKhachHang() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(0xF8F7FF));
+        CardLayout innerCard = new CardLayout();
+        JPanel panel = new JPanel(innerCard);
 
-        JLabel title = new JLabel("Quản Lý Khách Hàng", SwingConstants.CENTER);
-        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+        // Cột: 0-HoTen, 1-GioiTinh, 2-NgaySinh, 3-Hang, 4-Diem, 5-DiaChi, 6-Email, 7-SDT, 8-ThaoTac
+        String[] columns = {
+            "Họ tên", "Giới tính", "Ngày sinh",
+            "Hạng", "Điểm", "Địa chỉ", "Email", "SĐT", "Thao tác"
+        };
+        DefaultTableModel model = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return column == 8; }
+        };
+        model.addRow(new Object[]{ "Nhan Thị Ngọc Trân", "Nữ",  "10/11/2006", "Vàng", "45", "Sao Hỏa",  "ngoctran@gmail.com",    "0904254315", "" });
+        model.addRow(new Object[]{ "Nguyễn Thái Thảo",   "Nữ",  "12/07/2006", "Bạc",  "36", "Sao Thủy", "meolanhmanh@gmail.com", "0123456789", "" });
 
-        panel.add(title, BorderLayout.CENTER);
+        // ── CARD 1: Bảng danh sách ───────────────────────────────────
+        JPanel tableCard = new JPanel(new BorderLayout());
+
+        JTable bang = new JTable(model);
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        bang.setRowSorter(sorter);
+
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
+        top.setPreferredSize(new Dimension(1174, 94));
+        top.setBackground(new Color(0xF8F7FF));
+        top.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.BLACK, 1),
+            BorderFactory.createEmptyBorder(20, 10, 20, 10)
+        ));
+
+        // index: 0=Tất cả, 1=Nam, 2=Nữ, 3=Đồng, 4=Bạc, 5=Vàng, 6=Kim cương
+        String[] boloc = { "Tất cả", "Nam", "Nữ", "Đồng", "Bạc", "Vàng", "Kim cương" };
+        JComboBox<String> cbLoc = new JComboBox<>(boloc);
+        cbLoc.setPreferredSize(new Dimension(254, 42));
+        cbLoc.setFont(new Font("Arial", Font.PLAIN, 24));
+        cbLoc.setBackground(new Color(0xD9D9D9));
+
+        JPanel timkiem = new JPanel(new BorderLayout());
+        timkiem.setPreferredSize(new Dimension(229, 42));
+        timkiem.setBackground(new Color(0xD9D9D9));
+        JTextField tim = new JTextField();
+        tim.setFont(new Font("Arial", Font.PLAIN, 24));
+        timkiem.add(tim, BorderLayout.CENTER);
+
+        JButton nuttim = new JButton("🔍");
+        nuttim.setBorderPainted(false);
+        nuttim.setContentAreaFilled(false);
+        nuttim.setFocusPainted(false);
+        nuttim.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        nuttim.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                nuttim.setContentAreaFilled(true);
+                nuttim.setBackground(new Color(0xC5B3E6));
+                nuttim.setOpaque(true);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                nuttim.setContentAreaFilled(false);
+                nuttim.setOpaque(false);
+            }
+        });
+        timkiem.add(nuttim, BorderLayout.EAST);
+
+        JButton them = new JButton("+ Thêm khách hàng");
+        them.setFocusPainted(false);
+        them.setBackground(new Color(0xD9D9D9));
+        them.setPreferredSize(new Dimension(254, 42));
+        them.setFont(new Font("Arial", Font.BOLD, 22));
+        them.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        them.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) { them.setBackground(new Color(0xC5B3E6)); }
+            public void mouseExited(java.awt.event.MouseEvent evt)  { them.setBackground(new Color(0xD9D9D9)); }
+        });
+        // Khai báo sớm để dùng trong tất cả lambda
+        JButton btnLuu = new JButton("LƯU");
+        btnLuu.setFont(new Font("Arial", Font.BOLD, 24));
+        btnLuu.setBackground(new Color(0xB83434));
+        btnLuu.setForeground(Color.WHITE);
+        btnLuu.setFocusPainted(false);
+        btnLuu.setBorderPainted(false);
+        btnLuu.setPreferredSize(new Dimension(160, 52));
+        btnLuu.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        them.addActionListener(e -> {
+            khEditingRow = -1;
+            // Re-enable fields phòng trường hợp vừa xem
+            khTenKH.setEditable(true);   khNgaySinh.setEditable(true);
+            khHang.setEditable(true);    khDiem.setEditable(true);
+            khDiaChi.setEditable(true);  khEmail.setEditable(true);
+            khSDT.setEditable(true);
+            rbNam.setEnabled(true);      rbNu.setEnabled(true);
+            btnLuu.setText("LƯU");
+            btnLuu.setBackground(new Color(0xB83434));
+            khViewingRow = -1;
+            khTenKH.setText(""); rbNam.setSelected(true); khNgaySinh.setText("");
+            khHang.setText(""); khDiem.setText(""); khDiaChi.setText("");
+            khEmail.setText(""); khSDT.setText("");
+            innerCard.show(panel, CARD_THEM);
+        });
+
+        // Filter: cột 1 = Giới tính, cột 3 = Hạng; tìm kiếm theo cột 0 = Họ tên
+        Runnable applyFilter = () -> {
+            String tuKhoa = tim.getText().trim();
+            int idxLoc = cbLoc.getSelectedIndex();
+
+            RowFilter<DefaultTableModel, Integer> filterLoc = switch (idxLoc) {
+                case 1 -> RowFilter.regexFilter("(?i)^Nam$",        1);  // Giới tính Nam
+                case 2 -> RowFilter.regexFilter("(?i)^Nữ$",         1);  // Giới tính Nữ
+                case 3 -> RowFilter.regexFilter("(?i)^Đồng$",       3);  // Hạng Đồng
+                case 4 -> RowFilter.regexFilter("(?i)^Bạc$",        3);  // Hạng Bạc
+                case 5 -> RowFilter.regexFilter("(?i)^Vàng$",       3);  // Hạng Vàng
+                case 6 -> RowFilter.regexFilter("(?i)^Kim cương$",  3);  // Hạng Kim cương
+                default -> null;                                          // Tất cả
+            };
+
+            RowFilter<DefaultTableModel, Integer> filterTim = tuKhoa.isEmpty()
+                ? null
+                : RowFilter.regexFilter("(?i)" + tuKhoa, 0);  // tìm theo Họ tên (cột 0)
+
+            if (filterLoc != null && filterTim != null)
+                sorter.setRowFilter(RowFilter.andFilter(java.util.List.of(filterLoc, filterTim)));
+            else if (filterLoc != null)
+                sorter.setRowFilter(filterLoc);
+            else if (filterTim != null)
+                sorter.setRowFilter(filterTim);
+            else
+                sorter.setRowFilter(null);
+        };
+
+        cbLoc.addActionListener(e -> applyFilter.run());
+        nuttim.addActionListener(e -> applyFilter.run());
+        tim.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { applyFilter.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { applyFilter.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter.run(); }
+        });
+
+        top.add(cbLoc);
+        top.add(timkiem);
+        top.add(them);
+
+        JPanel content = new JPanel(new BorderLayout());
+        content.setBackground(new Color(0xF8F7FF));
+
+        bang.setRowHeight(76);
+        bang.setFont(new Font("Arial", Font.PLAIN, 20));
+        bang.getTableHeader().setFont(new Font("Arial", Font.BOLD, 20));
+        bang.getTableHeader().setPreferredSize(new Dimension(1166, 76));
+        bang.getTableHeader().setBackground(new Color(0xAF9FCB));
+        bang.getColumnModel().getColumn(0).setPreferredWidth(200);
+        bang.getColumnModel().getColumn(1).setPreferredWidth(80);
+        bang.getColumnModel().getColumn(2).setPreferredWidth(100);
+        bang.getColumnModel().getColumn(3).setPreferredWidth(80);
+        bang.getColumnModel().getColumn(4).setPreferredWidth(60);
+        bang.getColumnModel().getColumn(5).setPreferredWidth(150);
+        bang.getColumnModel().getColumn(6).setPreferredWidth(180);
+        bang.getColumnModel().getColumn(7).setPreferredWidth(110);
+
+        DefaultTableCellRenderer altRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(
+                        table, value, isSelected, hasFocus, row, column);
+                if (!isSelected)
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xD3E8F3));
+                setHorizontalAlignment(SwingConstants.CENTER);
+                return c;
+            }
+        };
+        for (int i = 0; i < bang.getColumnCount(); i++)
+            bang.getColumnModel().getColumn(i).setCellRenderer(altRenderer);
+
+        // Renderer nút Xem/Xóa
+        bang.getColumnModel().getColumn(8).setCellRenderer(new TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+                JPanel p = new JPanel(new GridLayout(2, 1, 5, 5));
+                JButton xem = new JButton("Xem");
+                JButton xoa = new JButton("Xóa");
+                xem.setFocusPainted(false); xoa.setFocusPainted(false);
+                xem.setBackground(new Color(0x6677C8)); xoa.setBackground(new Color(0xB83434));
+                xem.setForeground(Color.WHITE);         xoa.setForeground(Color.WHITE);
+                p.add(xem); p.add(xoa);
+                return p;
+            }
+        });
+
+        // Editor nút Xem/Xóa – chỉ xem, không chỉnh sửa
+        bang.getColumnModel().getColumn(8).setCellEditor(new DefaultCellEditor(new JCheckBox()) {
+            private final JPanel p    = new JPanel(new GridLayout(2, 1, 5, 5));
+            private final JButton xem = new JButton("Xem");
+            private final JButton xoa = new JButton("Xóa");
+            private int currentRow = -1;
+            {
+                xem.setFocusPainted(false); xoa.setFocusPainted(false);
+                xem.setBackground(new Color(0x6677C8)); xoa.setBackground(new Color(0xB83434));
+                xem.setForeground(Color.WHITE);         xoa.setForeground(Color.WHITE);
+                p.add(xem); p.add(xoa);
+
+                xem.addActionListener(e -> {
+                    fireEditingStopped();
+                    int modelRow = bang.convertRowIndexToModel(currentRow);
+                    khEditingRow = -1;
+                    khViewingRow = modelRow;
+
+                    // Load dữ liệu vào form
+                    khTenKH.setText(model.getValueAt(modelRow, 0).toString());
+                    String gt = model.getValueAt(modelRow, 1).toString();
+                    if (gt.equalsIgnoreCase("Nữ") || gt.equalsIgnoreCase("Nu")) rbNu.setSelected(true);
+                    else rbNam.setSelected(true);
+                    khNgaySinh.setText(model.getValueAt(modelRow, 2).toString());
+                    khHang.setText(model.getValueAt(modelRow, 3).toString());
+                    khDiem.setText(model.getValueAt(modelRow, 4).toString());
+                    khDiaChi.setText(model.getValueAt(modelRow, 5).toString());
+                    khEmail.setText(model.getValueAt(modelRow, 6).toString());
+                    khSDT.setText(model.getValueAt(modelRow, 7).toString());
+
+                    // Disable toàn bộ field trừ Hạng và Điểm
+                    khTenKH.setEditable(false);   khNgaySinh.setEditable(false);
+                    khHang.setEditable(true);     khDiem.setEditable(true);
+                    khDiaChi.setEditable(false);  khEmail.setEditable(false);
+                    khSDT.setEditable(false);
+                    rbNam.setEnabled(false);      rbNu.setEnabled(false);
+
+                    // Đổi tên nút thành CẬP NHẬT
+                    btnLuu.setText("CẬP NHẬT");
+                    btnLuu.setBackground(new Color(0x4CAF50));
+
+                    innerCard.show(panel, CARD_THEM);
+                });
+
+                xoa.addActionListener(e -> {
+                    fireEditingStopped();
+                    int modelRow = bang.convertRowIndexToModel(currentRow);
+                    if (modelRow >= 0 && modelRow < model.getRowCount())
+                        model.removeRow(modelRow);
+                });
+            }
+            @Override
+            public Component getTableCellEditorComponent(
+                    JTable table, Object value, boolean isSelected, int row, int column) {
+                currentRow = row;
+                return p;
+            }
+            @Override public Object getCellEditorValue() { return ""; }
+        });
+
+        content.add(new JScrollPane(bang), BorderLayout.CENTER);
+        tableCard.add(top,     BorderLayout.NORTH);
+        tableCard.add(content, BorderLayout.CENTER);
+
+        // ── CARD 2: Form thêm / sửa khách hàng ─────────────────────
+        JPanel themCard = new JPanel(new BorderLayout());
+        themCard.setBackground(new Color(0xF0EFF8));
+
+        JPanel formHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 18));
+        formHeader.setBackground(new Color(0xF0EFF8));
+        formHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(0xCCCCCC)));
+
+        JButton btnQuayLai = new JButton("← Quay lại danh sách");
+        btnQuayLai.setFont(new Font("Arial", Font.BOLD, 22));
+        btnQuayLai.setBackground(new Color(0x9B8EA8));
+        btnQuayLai.setForeground(Color.WHITE);
+        btnQuayLai.setFocusPainted(false);
+        btnQuayLai.setBorderPainted(false);
+        btnQuayLai.setPreferredSize(new Dimension(300, 48));
+        btnQuayLai.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnQuayLai.addActionListener(e -> {
+            // Re-enable fields khi quay lại
+            khTenKH.setEditable(true);   khNgaySinh.setEditable(true);
+            khHang.setEditable(true);    khDiem.setEditable(true);
+            khDiaChi.setEditable(true);  khEmail.setEditable(true);
+            khSDT.setEditable(true);
+            rbNam.setEnabled(true);      rbNu.setEnabled(true);
+            btnLuu.setText("LƯU");
+            btnLuu.setBackground(new Color(0xB83434));
+            khEditingRow = -1;
+            khViewingRow = -1;
+            innerCard.show(panel, CARD_TABLE);
+        });
+        formHeader.add(btnQuayLai);
+        themCard.add(formHeader, BorderLayout.NORTH);
+
+        // Form với 2 cột để hiển thị đủ 8 trường gọn gàng
+        JPanel form = new JPanel(null);
+        form.setBackground(new Color(0xF0EFF8));
+        Font labelFont = new Font("Arial", Font.BOLD, 20);
+
+        // Cột trái
+        JLabel lbTenKH = new JLabel("Họ tên");        lbTenKH.setFont(labelFont);    lbTenKH.setBounds(40, 40, 180, 30);
+        khTenKH   = makeField(); khTenKH.setBounds(220, 35, 340, 42);
+
+        JLabel lbGT = new JLabel("Giới tính");         lbGT.setFont(labelFont);       lbGT.setBounds(40, 110, 180, 30);
+        rbNam  = new JRadioButton("Nam");
+        rbNu   = new JRadioButton("Nữ");
+        bgGioiTinh = new ButtonGroup();
+        bgGioiTinh.add(rbNam); bgGioiTinh.add(rbNu);
+        rbNam.setSelected(true);
+        Font radioFont = new Font("Arial", Font.PLAIN, 20);
+        rbNam.setFont(radioFont);  rbNu.setFont(radioFont);
+        rbNam.setBackground(new Color(0xF0EFF8));
+        rbNu.setBackground(new Color(0xF0EFF8));
+        rbNam.setBounds(220, 105, 90, 42);
+        rbNu.setBounds(320, 105, 80, 42);
+
+        JLabel lbNS = new JLabel("Ngày sinh");         lbNS.setFont(labelFont);       lbNS.setBounds(40, 180, 180, 30);
+        khNgaySinh = makeField(); khNgaySinh.setBounds(220, 175, 340, 42);
+        JLabel lbNSHint = new JLabel("dd/MM/yyyy");
+        lbNSHint.setFont(new Font("Arial", Font.ITALIC, 16));
+        lbNSHint.setForeground(new Color(0x888888));
+        lbNSHint.setBounds(570, 183, 120, 30);
+
+        JLabel lbHang = new JLabel("Hạng KH");         lbHang.setFont(labelFont);     lbHang.setBounds(40, 250, 180, 30);
+        khHang    = makeField(); khHang.setBounds(220, 245, 340, 42);
+        JLabel lbHangHint = new JLabel("Đồng / Bạc / Vàng / Kim cương");
+        lbHangHint.setFont(new Font("Arial", Font.ITALIC, 15));
+        lbHangHint.setForeground(new Color(0x888888));
+        lbHangHint.setBounds(570, 253, 280, 30);
+
+        JLabel lbDiem = new JLabel("Điểm");             lbDiem.setFont(labelFont);     lbDiem.setBounds(40, 320, 180, 30);
+        khDiem    = makeField(); khDiem.setBounds(220, 315, 340, 42);
+
+        // Cột phải
+        JLabel lbDC = new JLabel("Địa chỉ");           lbDC.setFont(labelFont);       lbDC.setBounds(700, 40, 180, 30);
+        khDiaChi  = makeField(); khDiaChi.setBounds(870, 35, 340, 42);
+
+        JLabel lbEmail = new JLabel("Email");           lbEmail.setFont(labelFont);    lbEmail.setBounds(700, 110, 180, 30);
+        khEmail   = makeField(); khEmail.setBounds(870, 105, 340, 42);
+
+        JLabel lbSDT = new JLabel("SĐT");               lbSDT.setFont(labelFont);      lbSDT.setBounds(700, 180, 180, 30);
+        khSDT     = makeField(); khSDT.setBounds(870, 175, 340, 42);
+
+        form.add(lbTenKH);    form.add(khTenKH);
+        form.add(lbGT);       form.add(rbNam); form.add(rbNu);
+        form.add(lbNS);       form.add(khNgaySinh); form.add(lbNSHint);
+        form.add(lbHang);     form.add(khHang);     form.add(lbHangHint);
+        form.add(lbDiem);     form.add(khDiem);
+        form.add(lbDC);       form.add(khDiaChi);
+        form.add(lbEmail);    form.add(khEmail);
+        form.add(lbSDT);      form.add(khSDT);
+
+        themCard.add(form, BorderLayout.CENTER);
+
+        JPanel formFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 30, 16));
+        formFooter.setBackground(new Color(0xF0EFF8));
+        formFooter.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(0xCCCCCC)));
+
+        formFooter.add(btnLuu);
+        themCard.add(formFooter, BorderLayout.SOUTH);
+
+        btnLuu.addActionListener(e -> {
+            // ── Chế độ CẬP NHẬT: chỉ cập nhật Hạng và Điểm ──────
+            if (khViewingRow >= 0) {
+                String hang    = khHang.getText().trim();
+                String diemTxt = khDiem.getText().trim();
+                if (hang.isEmpty() || diemTxt.isEmpty()) {
+                    JOptionPane.showMessageDialog(themCard,
+                        "Vui lòng nhập Hạng và Điểm.",
+                        "Thiếu thông tin", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                int diem;
+                try { diem = Integer.parseInt(diemTxt); }
+                catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(themCard,
+                        "Điểm phải là số nguyên.",
+                        "Sai định dạng", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                model.setValueAt(hang,                 khViewingRow, 3);
+                model.setValueAt(String.valueOf(diem), khViewingRow, 4);
+                khViewingRow = -1;
+
+            // ── Chế độ THÊM MỚI ───────────────────────────────────
+            } else {
+                String ten    = khTenKH.getText().trim();
+                String gt     = rbNam.isSelected() ? "Nam" : "Nữ";
+                String ns     = khNgaySinh.getText().trim();
+                String hang   = khHang.getText().trim();
+                String diemTxt= khDiem.getText().trim();
+                String dc     = khDiaChi.getText().trim();
+                String email  = khEmail.getText().trim();
+                String sdt    = khSDT.getText().trim();
+                if (ten.isEmpty() || ns.isEmpty() || sdt.isEmpty()) {
+                    JOptionPane.showMessageDialog(themCard,
+                        "Vui lòng nhập đủ các trường bắt buộc:\nHọ tên, Ngày sinh, SĐT.",
+                        "Thiếu thông tin", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                int diem = 0;
+                if (!diemTxt.isEmpty()) {
+                    try { diem = Integer.parseInt(diemTxt); }
+                    catch (NumberFormatException ex) {
+                        JOptionPane.showMessageDialog(themCard,
+                            "Điểm phải là số nguyên.",
+                            "Sai định dạng", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                }
+                if (hang.isEmpty()) {
+                    if      (diem >= 500) hang = "Kim cương";
+                    else if (diem >= 200) hang = "Vàng";
+                    else if (diem >= 100) hang = "Bạc";
+                    else                  hang = "Đồng";
+                }
+                model.addRow(new Object[]{ ten, gt, ns, hang, String.valueOf(diem), dc, email, sdt, "" });
+            }
+
+            // Reset form và khôi phục trạng thái
+            khTenKH.setText(""); rbNam.setSelected(true); khNgaySinh.setText("");
+            khHang.setText(""); khDiem.setText(""); khDiaChi.setText("");
+            khEmail.setText(""); khSDT.setText("");
+            khTenKH.setEditable(true);   khNgaySinh.setEditable(true);
+            khHang.setEditable(true);    khDiem.setEditable(true);
+            khDiaChi.setEditable(true);  khEmail.setEditable(true);
+            khSDT.setEditable(true);
+            rbNam.setEnabled(true);      rbNu.setEnabled(true);
+            btnLuu.setText("LƯU");
+            btnLuu.setBackground(new Color(0xB83434));
+            innerCard.show(panel, CARD_TABLE);
+        });
+
+        panel.add(tableCard, CARD_TABLE);
+        panel.add(themCard,  CARD_THEM);
+        innerCard.show(panel, CARD_TABLE);
+
         return panel;
     }
 
