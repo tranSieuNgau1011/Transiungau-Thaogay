@@ -3,7 +3,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
-
 import java.awt.*;
 
 public class GUI extends JFrame {
@@ -129,14 +128,228 @@ public class GUI extends JFrame {
     }
 
      private JPanel createPanelTrangChu() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(0xF8F7FF));
+        JPanel panel = new JPanel(new BorderLayout(0, 0));
+    panel.setBackground(new Color(0xF8F7FF));
 
-        JLabel title = new JLabel("Trang Chủ", SwingConstants.CENTER);
-        title.setFont(new Font("Playfair Display", Font.BOLD, 32));
+    // 4 panel ngang trên cùng
+    JPanel topCards = new JPanel(new GridLayout(1, 4, 30, 0)); //só hàng, số cột, k/c ngang, k/c dọc
+    topCards.setBackground(new Color(0xF8F7FF));
+    topCards.setBorder(BorderFactory.createEmptyBorder(18, 18, 12, 18));
 
-        panel.add(title, BorderLayout.CENTER);
-        return panel;
+    Object[][] cardData = {
+        { "💳", "Doanh thu:",    "15.000.000 VND", new Color(0xD4F4E2), new Color(0x5CB85C) }, //màu thẻ, màu viền
+        { "🛒", "Đơn hàng mới:", "25 đơn",         new Color(0xCDE8FF), new Color(0x4A90D9) },
+        { "⚠",  "Sản phẩm sắp hết:", "5 mặt hàng", new Color(0xFFF3CD), new Color(0xF0AD4E) },
+        { "👤", "Khách hàng mới:", "+10 khách",    new Color(0xF5D0F5), new Color(0xAB47BC) },
+    };
+
+    for (Object[] d : cardData) {
+        JPanel card = new JPanel(new BorderLayout(10, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 18, 18);
+                g2.setColor(((Color) d[4]).darker());
+                g2.setStroke(new BasicStroke(2f));
+                g2.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 18, 18);
+                g2.dispose();
+            }
+        };
+        card.setBackground((Color) d[3]);
+        card.setOpaque(false);
+        card.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
+
+        JLabel icon = new JLabel((String) d[0]);
+        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+        icon.setHorizontalAlignment(SwingConstants.CENTER);
+        icon.setPreferredSize(new Dimension(42, 42));
+
+        JPanel txtPanel = new JPanel(new GridLayout(2, 1, 0, 2));
+        txtPanel.setOpaque(false);
+
+        JLabel lbTitle = new JLabel((String) d[1]);
+        lbTitle.setFont(new Font("Arial", Font.BOLD, 15));
+        lbTitle.setForeground(new Color(0x444444));
+
+        JLabel lbVal = new JLabel((String) d[2]);
+        lbVal.setFont(new Font("Arial", Font.BOLD, 17));
+        lbVal.setForeground(new Color(0x222222));
+
+        txtPanel.add(lbTitle);
+        txtPanel.add(lbVal);
+
+        card.add(icon,     BorderLayout.WEST);
+        card.add(txtPanel, BorderLayout.CENTER);
+        topCards.add(card);
+    }
+
+    // panel của đồ thị và đơn hàng
+    JPanel centerPanel = new JPanel(new GridLayout(1, 2, 14, 0));
+    centerPanel.setBackground(new Color(0xF8F7FF));
+    centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 18, 18, 18));
+
+    // đô thị
+    JPanel chartCard = createCard();
+
+    JLabel chartTitle = new JLabel("Sales Growth (Tạm thời để z đi r mốt có thông số đầy đủ r sửa lại)");
+    chartTitle.setFont(new Font("Playfair Display", Font.BOLD, 20));
+    chartTitle.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+
+    // Vẽ biểu đồ đường đơn giản bằng canvas
+    int[] chartValues = { 10, 22, 38, 32, 55, 52, 88, 100 };
+    String[] chartLabels = { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
+
+    JPanel chart = new JPanel() {
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth(), h = getHeight();
+            int padL = 40, padR = 20, padT = 20, padB = 30;
+            int chartW = w - padL - padR;
+            int chartH = h - padT - padB;
+            int n = chartValues.length;
+
+            // Đường lưới ngang
+            g2.setColor(new Color(0xDDDDDD));
+            g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{4}, 0));
+            for (int i = 0; i <= 4; i++) {
+                int y = padT + chartH * i / 4;
+                g2.drawLine(padL, y, padL + chartW, y);
+                g2.setColor(new Color(0x999999));
+                g2.setFont(new Font("Arial", Font.PLAIN, 11));
+                g2.drawString(String.valueOf(100 - 25 * i), 2, y + 4);
+                g2.setColor(new Color(0xDDDDDD));
+            }
+
+            // Vùng tô bên dưới đường
+            int[] xs = new int[n + 2];
+            int[] ys = new int[n + 2];
+            for (int i = 0; i < n; i++) {
+                xs[i] = padL + i * chartW / (n - 1);
+                ys[i] = padT + chartH - chartValues[i] * chartH / 100;
+            }
+            xs[n] = padL + chartW; ys[n] = padT + chartH;
+            xs[n + 1] = padL;       ys[n + 1] = padT + chartH;
+
+            g2.setColor(new Color(0xB8A9D9));
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.35f));
+            g2.fillPolygon(xs, ys, n + 2);
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+
+            // Đường chính
+            g2.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.setColor(new Color(0x7B68AE));
+            for (int i = 0; i < n - 1; i++) {
+                g2.drawLine(xs[i], ys[i], xs[i + 1], ys[i + 1]);
+            }
+
+            // Điểm tròn
+            g2.setColor(new Color(0x7B68AE));
+            for (int i = 0; i < n; i++) {
+                g2.fillOval(xs[i] - 4, ys[i] - 4, 8, 8);
+            }
+
+            // Nhãn trục X
+            g2.setColor(new Color(0x666666));
+            g2.setFont(new Font("Arial", Font.PLAIN, 11));
+            for (int i = 0; i < chartLabels.length; i++) {
+                int xi = padL + i * chartW / (n - 1);
+                g2.drawString(chartLabels[i], xi - 8, h - 6);
+            }
+        }
+    };
+    chart.setOpaque(false);
+    chart.setPreferredSize(new Dimension(0, 260));
+
+    chartCard.add(chartTitle, BorderLayout.NORTH);
+    chartCard.add(chart,      BorderLayout.CENTER);
+
+    //Bảng đơn hàng gần đây 
+    JPanel orderCard = createCard();
+
+    JLabel orderTitle = new JLabel("Đơn hàng gần đây");
+    orderTitle.setFont(new Font("Playfair Display", Font.BOLD, 20));
+    orderTitle.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+
+    String[] orderCols = { "Mã đơn", "Khách hàng", "Trạng thái" };
+    Object[][] orderRows = {
+        { "HD001", "Nguyễn Văn A", "Đang giao" },
+        { "HD002", "Nguyễn Văn N", "Đã giao"   },
+        { "HD003", "Nguyễn Văn D", "Bị boom"   },
+    };
+
+    DefaultTableModel orderModel = new DefaultTableModel(orderRows, orderCols) {
+        @Override public boolean isCellEditable(int r, int c) { return false; }
+    };
+    JTable orderTable = new JTable(orderModel);
+    orderTable.setFont(new Font("Arial", Font.PLAIN, 16));
+    orderTable.setRowHeight(38);
+    orderTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 16));
+    orderTable.getTableHeader().setBackground(new Color(0xAF9FCB));
+    orderTable.getTableHeader().setForeground(Color.WHITE);
+    orderTable.setShowVerticalLines(false);
+    orderTable.setGridColor(new Color(0xEEEEEE));
+
+    // Màu trạng thái
+    DefaultTableCellRenderer statusRenderer = new DefaultTableCellRenderer() {
+        @Override
+        public Component getTableCellRendererComponent(JTable t, Object v,
+                boolean sel, boolean foc, int row, int col) {
+            super.getTableCellRendererComponent(t, v, sel, foc, row, col);
+            setHorizontalAlignment(SwingConstants.CENTER);
+            if (!sel) {
+                setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xF3F0FA));
+            }
+            if (col == 2) {
+                String val = v == null ? "" : v.toString();
+                switch (val) {
+                    case "Đang giao" -> setForeground(new Color(0x1976D2));
+                    case "Đã giao"   -> setForeground(new Color(0x388E3C));
+                    case "Bị boom"   -> setForeground(new Color(0xC62828));
+                    default          -> setForeground(Color.BLACK);
+                }
+            } else {
+                setForeground(Color.BLACK);
+            }
+            return this;
+        }
+    };
+    for (int i = 0; i < 3; i++)
+        orderTable.getColumnModel().getColumn(i).setCellRenderer(statusRenderer);
+
+    orderCard.add(orderTitle,              BorderLayout.NORTH);
+    orderCard.add(new JScrollPane(orderTable), BorderLayout.CENTER);
+
+    centerPanel.add(chartCard);
+    centerPanel.add(orderCard);
+
+    panel.add(topCards,    BorderLayout.NORTH);
+    panel.add(centerPanel, BorderLayout.CENTER);
+    return panel;
+    }
+
+    private JPanel createCard() {
+    JPanel card = new JPanel(new BorderLayout(0, 8)) {
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            // Bóng đổ nhẹ
+            g2.setColor(new Color(0, 0, 0, 40));
+            g2.fillRoundRect(6, 8, getWidth() - 4, getHeight() - 4, 16, 16);
+            g2.setColor(Color.WHITE);
+            g2.fillRoundRect(0, 0, getWidth() - 2, getHeight() - 2, 16, 16);
+            g2.dispose();
+        }
+    };
+    card.setOpaque(false);
+    card.setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
+    return card;
     }
 
     private JPanel createPanelSanPham() {
@@ -271,15 +484,23 @@ public class GUI extends JFrame {
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(new Color(0xF8F7FF));
 
-        bang.setRowHeight(76);
-        bang.setFont(new Font("Arial", Font.PLAIN, 20));
-        bang.getTableHeader().setFont(new Font("Arial", Font.BOLD, 20));
-        bang.getTableHeader().setPreferredSize(new Dimension(1166, 76));
-        bang.getTableHeader().setBackground(new Color(0xAF9FCB));
-        bang.getColumnModel().getColumn(0).setPreferredWidth(50);
-        bang.getColumnModel().getColumn(2).setPreferredWidth(150);
-        bang.getColumnModel().getColumn(4).setPreferredWidth(50);
+        bang.setRowHeight(52);
+        bang.setFont(new Font("Arial", Font.PLAIN, 16));
+        bang.getTableHeader().setFont(new Font("Arial", Font.BOLD, 16));
+        bang.getTableHeader().setPreferredSize(new Dimension(1166, 52));
+        bang.getTableHeader().setBackground(new Color(0xAF9FCB));  // tím giống bảng đơn hàng
+        bang.getTableHeader().setForeground(Color.WHITE);
+        bang.getTableHeader().setReorderingAllowed(false);
+        bang.setShowVerticalLines(false);         // bỏ đường dọc
+        bang.setGridColor(new Color(0xEEEEEE));   // đường ngang nhạt
+        bang.setIntercellSpacing(new Dimension(0, 1));
+        bang.getColumnModel().getColumn(0).setPreferredWidth(70);
+        bang.getColumnModel().getColumn(1).setPreferredWidth(60);
+        bang.getColumnModel().getColumn(2).setPreferredWidth(180);
+        bang.getColumnModel().getColumn(4).setPreferredWidth(70);
+        bang.getColumnModel().getColumn(8).setPreferredWidth(100);
 
+        // Renderer xen kẽ màu row giống bảng đơn hàng gần đây
         DefaultTableCellRenderer altRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(
@@ -287,58 +508,64 @@ public class GUI extends JFrame {
                     boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(
                         table, value, isSelected, hasFocus, row, column);
-                if (!isSelected)
-                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xD3E8F3));
+                if (!isSelected) {
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xF3F0FA)); // trắng / tím rất nhạt
+                }
                 setHorizontalAlignment(SwingConstants.CENTER);
+
+                // Tô màu cột "Kho" theo trạng thái
+                if (column == 5 && !isSelected) {
+                    String val = value == null ? "" : value.toString();
+                    switch (val) {
+                        case "Còn hàng" -> setForeground(new Color(0x388E3C));
+                        case "Hết hàng" -> setForeground(new Color(0xC62828));
+                        default         -> setForeground(Color.BLACK);
+                    }
+                } else {
+                    setForeground(Color.BLACK);
+                }
                 return c;
             }
         };
-        for (int i = 0; i < bang.getColumnCount(); i++)
+        for (int i = 0; i < bang.getColumnCount() - 1; i++) // bỏ cột thao tác
             bang.getColumnModel().getColumn(i).setCellRenderer(altRenderer);
 
+        // Renderer nút Sửa/Xóa — gọn lại, bo tròn hơn
         bang.getColumnModel().getColumn(8).setCellRenderer(new TableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(
                     JTable table, Object value, boolean isSelected,
                     boolean hasFocus, int row, int column) {
-                JPanel p = new JPanel(new GridLayout(2, 1, 5, 5));
-                JButton sua = new JButton("Sửa");
-                JButton xoa = new JButton("Xóa");
-                sua.setFocusPainted(false); xoa.setFocusPainted(false);
-                sua.setBackground(new Color(0x6677C8)); xoa.setBackground(new Color(0xB83434));
-                sua.setForeground(Color.WHITE);         xoa.setForeground(Color.WHITE);
+                JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 8));
+                p.setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xF3F0FA));
+                JButton sua = makeActionButton("Sửa", new Color(0x6677C8));
+                JButton xoa = makeActionButton("Xóa", new Color(0xB83434));
                 p.add(sua); p.add(xoa);
                 return p;
             }
         });
 
         bang.getColumnModel().getColumn(8).setCellEditor(new DefaultCellEditor(new JCheckBox()) {
-            private final JPanel p    = new JPanel(new GridLayout(2, 1, 5, 5));
-            private final JButton sua = new JButton("Sửa");
-            private final JButton xoa = new JButton("Xóa");
+            private final JPanel p    = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 8));
+            private final JButton sua = makeActionButton("Sửa", new Color(0x6677C8));
+            private final JButton xoa = makeActionButton("Xóa", new Color(0xB83434));
             private int currentRow = -1;
             {
-                sua.setFocusPainted(false); xoa.setFocusPainted(false);
-                sua.setBackground(new Color(0x6677C8)); xoa.setBackground(new Color(0xB83434));
-                sua.setForeground(Color.WHITE);         xoa.setForeground(Color.WHITE);
+                p.setOpaque(true);
                 p.add(sua); p.add(xoa);
                 sua.addActionListener(e -> {
-                fireEditingStopped();
-
-                int modelRow = bang.convertRowIndexToModel(currentRow);
-                editingRow = modelRow;
-
-                tfMa.setText(model.getValueAt(modelRow, 0).toString());
-                tfTen.setText(model.getValueAt(modelRow, 2).toString());
-                tfGia.setText(model.getValueAt(modelRow, 3).toString());
-                tfSL.setText(model.getValueAt(modelRow, 4).toString());
-                tfDate.setText(model.getValueAt(modelRow, 6).toString());
-
-                String km = model.getValueAt(modelRow, 7).toString();
-                tfKM.setText(km.equals("-") ? "" : km);
-
-                innerCard.show(panel, CARD_THEM);
-            });
+                    fireEditingStopped();
+                    int modelRow = bang.convertRowIndexToModel(currentRow);
+                    editingRow = modelRow;
+                    tfMa.setText(model.getValueAt(modelRow, 0).toString());
+                    tfTen.setText(model.getValueAt(modelRow, 2).toString());
+                    tfGia.setText(model.getValueAt(modelRow, 3).toString());
+                    tfSL.setText(model.getValueAt(modelRow, 4).toString());
+                    tfDate.setText(model.getValueAt(modelRow, 6).toString());
+                    String km = model.getValueAt(modelRow, 7).toString();
+                    tfKM.setText(km.equals("-") ? "" : km);
+                    innerCard.show(panel, CARD_THEM);
+                });
                 xoa.addActionListener(e -> {
                     fireEditingStopped();
                     if (currentRow >= 0 && currentRow < model.getRowCount())
@@ -349,6 +576,7 @@ public class GUI extends JFrame {
             public Component getTableCellEditorComponent(
                     JTable table, Object value, boolean isSelected, int row, int column) {
                 currentRow = row;
+                p.setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xF3F0FA));
                 return p;
             }
             @Override public Object getCellEditorValue() { return ""; }
@@ -491,6 +719,41 @@ public class GUI extends JFrame {
 
         return panel;
     }
+
+    //text field chung
+    private JTextField makeField() {
+        JTextField tf = new JTextField();
+        tf.setFont(new Font("Arial", Font.PLAIN, 20));
+        tf.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0xAAAAAA), 1, true),
+            BorderFactory.createEmptyBorder(6, 10, 6, 10)));
+        return tf;
+    }
+
+    private JButton makeActionButton(String text, Color bg) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("Arial", Font.BOLD, 13));
+        btn.setBackground(bg);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setOpaque(false);
+        btn.setPreferredSize(new Dimension(60, 32));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
     private JPanel createPanelKhachHang() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(new Color(0xF8F7FF));
@@ -544,17 +807,6 @@ public class GUI extends JFrame {
 
         panel.add(title, BorderLayout.CENTER);
         return panel;
-    }
-
-
-    //text field chung
-    private JTextField makeField() {
-        JTextField tf = new JTextField();
-        tf.setFont(new Font("Arial", Font.PLAIN, 20));
-        tf.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0xAAAAAA), 1, true),
-            BorderFactory.createEmptyBorder(6, 10, 6, 10)));
-        return tf;
     }
 
     // Hàm tạo style cho mấy cái nút 
