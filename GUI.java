@@ -1225,6 +1225,13 @@ public class GUI extends JFrame {
 
         int[] nvEditingRow = { -1 };
 
+        JButton btnLuuNV = new JButton("LƯU");
+        btnLuuNV.setFont(new Font("Arial", Font.BOLD, 24));
+        btnLuuNV.setBackground(new Color(0xB83434)); btnLuuNV.setForeground(Color.WHITE);
+        btnLuuNV.setFocusPainted(false); btnLuuNV.setBorderPainted(false);
+        btnLuuNV.setPreferredSize(new Dimension(160, 52));
+        btnLuuNV.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
         // ── CARD 1: Bảng danh sách ──────────────────────────────────
         JPanel tableCard = new JPanel(new BorderLayout());
 
@@ -1301,92 +1308,101 @@ public class GUI extends JFrame {
 
         top.add(cbLoc); top.add(timkiem); top.add(btnThem); 
 
-        bang.setRowHeight(76);
-        bang.setFont(new Font("Arial", Font.PLAIN, 20));
-        bang.getTableHeader().setFont(new Font("Arial", Font.BOLD, 20));
-        bang.getTableHeader().setPreferredSize(new Dimension(1166, 76));
-        bang.getTableHeader().setBackground(new Color(0xAF9FCB));
-        bang.getColumnModel().getColumn(0).setPreferredWidth(100);
-        bang.getColumnModel().getColumn(1).setPreferredWidth(200);
-        bang.getColumnModel().getColumn(2).setPreferredWidth(80);
-        bang.getColumnModel().getColumn(3).setPreferredWidth(100);
-        bang.getColumnModel().getColumn(4).setPreferredWidth(100);
-        bang.getColumnModel().getColumn(5).setPreferredWidth(180);
-        bang.getColumnModel().getColumn(6).setPreferredWidth(180);
-        bang.getColumnModel().getColumn(7).setPreferredWidth(110);
+        bang.setRowHeight(52);
+        bang.setFont(new Font("Arial", Font.PLAIN, 16));
+        bang.getTableHeader().setFont(new Font("Arial", Font.BOLD, 16));
+        bang.getTableHeader().setPreferredSize(new Dimension(1166, 52));
+        bang.getTableHeader().setBackground(new Color(0xAF9FCB));  // tím giống bảng đơn hàng
+        bang.getTableHeader().setForeground(Color.WHITE);
+        bang.getTableHeader().setReorderingAllowed(false);
+        bang.setShowVerticalLines(false);         // bỏ đường dọc
+        bang.setGridColor(new Color(0xEEEEEE));   // đường ngang nhạt
+        bang.setIntercellSpacing(new Dimension(0, 1));
+        bang.getColumnModel().getColumn(0).setPreferredWidth(70);
+        bang.getColumnModel().getColumn(1).setPreferredWidth(60);
+        bang.getColumnModel().getColumn(2).setPreferredWidth(180);
+        bang.getColumnModel().getColumn(4).setPreferredWidth(70);
+        bang.getColumnModel().getColumn(8).setPreferredWidth(100);
 
+        // Renderer xen kẽ màu row giống bảng đơn hàng gần đây
         DefaultTableCellRenderer altRenderer = new DefaultTableCellRenderer() {
-            @Override public Component getTableCellRendererComponent(
-                    JTable t, Object v, boolean sel, boolean foc, int row, int col) {
-                Component c = super.getTableCellRendererComponent(t, v, sel, foc, row, col);
-                if (!sel) c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xD3E8F3));
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(
+                        table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) {
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xF3F0FA)); // trắng / tím rất nhạt
+                }
                 setHorizontalAlignment(SwingConstants.CENTER);
+
+                // Tô màu cột "Kho" theo trạng thái
+                if (column == 5 && !isSelected) {
+                    String val = value == null ? "" : value.toString();
+                    switch (val) {
+                        case "Còn hàng" -> setForeground(new Color(0x388E3C));
+                        case "Hết hàng" -> setForeground(new Color(0xC62828));
+                        default         -> setForeground(Color.BLACK);
+                    }
+                } else {
+                    setForeground(Color.BLACK);
+                }
                 return c;
             }
         };
-        for (int i = 0; i < bang.getColumnCount(); i++)
+        for (int i = 0; i < bang.getColumnCount() - 1; i++) // bỏ cột thao tác
             bang.getColumnModel().getColumn(i).setCellRenderer(altRenderer);
 
-        // Khai báo sớm để dùng được trong editor bên dưới
-        JButton btnLuuNV = new JButton("LƯU");
-        btnLuuNV.setFont(new Font("Arial", Font.BOLD, 24));
-        btnLuuNV.setBackground(new Color(0xB83434)); btnLuuNV.setForeground(Color.WHITE);
-        btnLuuNV.setFocusPainted(false); btnLuuNV.setBorderPainted(false);
-        btnLuuNV.setPreferredSize(new Dimension(160, 52));
-        btnLuuNV.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
+        // Renderer nút Sửa/Xóa — gọn lại, bo tròn hơn
         bang.getColumnModel().getColumn(8).setCellRenderer(new TableCellRenderer() {
-            @Override public Component getTableCellRendererComponent(
-                    JTable t, Object v, boolean sel, boolean foc, int row, int col) {
-                JPanel p = new JPanel(new GridLayout(2, 1, 5, 5));
-                JButton xem = new JButton("Xem"), xoa = new JButton("Xóa");
-                xem.setFocusPainted(false); xoa.setFocusPainted(false);
-                xem.setBackground(new Color(0x6677C8)); xoa.setBackground(new Color(0xB83434));
-                xem.setForeground(Color.WHITE);         xoa.setForeground(Color.WHITE);
-                p.add(xem); p.add(xoa);
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+                JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 8));
+                p.setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xF3F0FA));
+                JButton sua = makeActionButton("Sửa", new Color(0x6677C8));
+                JButton xoa = makeActionButton("Xóa", new Color(0xB83434));
+                p.add(sua); p.add(xoa);
                 return p;
             }
         });
 
         bang.getColumnModel().getColumn(8).setCellEditor(new DefaultCellEditor(new JCheckBox()) {
-            private final JPanel p    = new JPanel(new GridLayout(2, 1, 5, 5));
-            private final JButton xem = new JButton("Xem"), xoa = new JButton("Xóa");
-            private int curRow = -1;
+            private final JPanel p    = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 8));
+            private final JButton sua = makeActionButton("Sửa", new Color(0x6677C8));
+            private final JButton xoa = makeActionButton("Xóa", new Color(0xB83434));
+            private int currentRow = -1;
             {
-                xem.setFocusPainted(false); xoa.setFocusPainted(false);
-                xem.setBackground(new Color(0x6677C8)); xoa.setBackground(new Color(0xB83434));
-                xem.setForeground(Color.WHITE);         xoa.setForeground(Color.WHITE);
-                p.add(xem); p.add(xoa);
-                xem.addActionListener(e -> {
+                p.setOpaque(true);
+                p.add(sua); p.add(xoa);
+                sua.addActionListener(e -> {
                     fireEditingStopped();
-                    int mr = bang.convertRowIndexToModel(curRow);
-                    nvEditingRow[0] = -1;
-                    nvMa.setText(model.getValueAt(mr, 0).toString());
-                    nvTen.setText(model.getValueAt(mr, 1).toString());
-                    String gt = model.getValueAt(mr, 2).toString();
-                    if (gt.equalsIgnoreCase("Nữ")) nvRbNu.setSelected(true);
-                    else nvRbNam.setSelected(true);
-                    nvNgaySinh.setText(model.getValueAt(mr, 3).toString());
-                    nvChucVu.setText(model.getValueAt(mr, 4).toString());
-                    nvDiaChi.setText(model.getValueAt(mr, 5).toString());
-                    nvEmail.setText(model.getValueAt(mr, 6).toString());
-                    nvSDT.setText(model.getValueAt(mr, 7).toString());
-                    // Disable toàn bộ fields — chỉ xem
-                    nvMa.setEditable(false); nvTen.setEditable(false);
-                    nvNgaySinh.setEditable(false); nvChucVu.setEditable(false);
-                    nvDiaChi.setEditable(false); nvEmail.setEditable(false);
-                    nvSDT.setEditable(false); nvRbNam.setEnabled(false); nvRbNu.setEnabled(false);
-                    btnLuuNV.setVisible(false);
+                    int modelRow = bang.convertRowIndexToModel(currentRow);
+                    editingRow = modelRow;
+                    tfMa.setText(model.getValueAt(modelRow, 0).toString());
+                    tfTen.setText(model.getValueAt(modelRow, 2).toString());
+                    tfGia.setText(model.getValueAt(modelRow, 3).toString());
+                    tfSL.setText(model.getValueAt(modelRow, 4).toString());
+                    tfDate.setText(model.getValueAt(modelRow, 6).toString());
+                    String km = model.getValueAt(modelRow, 7).toString();
+                    tfKM.setText(km.equals("-") ? "" : km);
                     innerCard.show(panel, CARD_THEM);
                 });
                 xoa.addActionListener(e -> {
                     fireEditingStopped();
-                    int mr = bang.convertRowIndexToModel(curRow);
-                    if (mr >= 0 && mr < model.getRowCount()) model.removeRow(mr);
+                    if (currentRow >= 0 && currentRow < model.getRowCount())
+                        model.removeRow(currentRow);
                 });
             }
-            @Override public Component getTableCellEditorComponent(
-                    JTable t, Object v, boolean sel, int row, int col) { curRow = row; return p; }
+            @Override
+            public Component getTableCellEditorComponent(
+                    JTable table, Object value, boolean isSelected, int row, int column) {
+                currentRow = row;
+                p.setBackground(row % 2 == 0 ? Color.WHITE : new Color(0xF3F0FA));
+                return p;
+            }
             @Override public Object getCellEditorValue() { return ""; }
         });
 
@@ -1396,10 +1412,15 @@ public class GUI extends JFrame {
         tableCard.add(top,     BorderLayout.NORTH);
         tableCard.add(content, BorderLayout.CENTER);
 
+        content.add(new JScrollPane(bang), BorderLayout.CENTER);
+        tableCard.add(top,     BorderLayout.NORTH);
+        tableCard.add(content, BorderLayout.CENTER);
+
         // ── CARD 2: Form thêm / sửa nhân viên ──────────────────────
         JPanel themCard = new JPanel(new BorderLayout());
         themCard.setBackground(new Color(0xF0EFF8));
 
+        btnLuuNV.setVisible(true);
         JPanel formHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 18));
         formHeader.setBackground(new Color(0xF0EFF8));
         formHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(0xCCCCCC)));
@@ -1415,7 +1436,6 @@ public class GUI extends JFrame {
             nvNgaySinh.setEditable(true); nvChucVu.setEditable(true);
             nvDiaChi.setEditable(true); nvEmail.setEditable(true);
             nvSDT.setEditable(true); nvRbNam.setEnabled(true); nvRbNu.setEnabled(true);
-            btnLuuNV.setVisible(true);
             innerCard.show(panel, CARD_TABLE);
         });
         formHeader.add(btnQuayLai);
